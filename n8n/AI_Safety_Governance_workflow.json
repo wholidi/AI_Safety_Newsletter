@@ -1,0 +1,998 @@
+{
+  "name": "AI Safety & Governance newsletter v5",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://techcrunch.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -2576,
+        -704
+      ],
+      "id": "2ccb1bd0-663c-49d0-9f33-72f495ee00b3",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are Agent 0, the News Scout for an AI Safety & Governance newsletter.\n\nYour role is to review the provided RSS items and select the most relevant recent stories for newsletter development.\n\nFocus areas:\n- AI safety\n- AI governance\n- AI regulation\n- AI audits and assurance\n- model risk\n- AI incidents\n- red teaming\n- evaluation and testing\n- transparency and explainability\n- compliance frameworks\n- standards and policy developments\n- enterprise AI controls\n- frontier AI risk when clearly tied to governance or safety\n\nInstructions:\n1. Review all RSS items in the input array.\n2. Ignore items that are off-topic, overly promotional, duplicated, or not materially relevant.\n3. Prioritize recency and practical importance.\n4. Select the top 3 to 5 items most relevant to AI safety and governance readers.\n5. For each selected item, provide:\n   - rank\n   - title\n   - source\n   - date\n   - link\n   - why_it_matters\n   - newsletter_angle\n6. Rank the selected items from most important to least important.\n7. At the end, provide:\n   - primary_story\n   - article_thesis\n   - suggested_newsletter_title\n\nRSS items:\n{{ JSON.stringify($json[\"rss_items\"], null, 2) }}\n\nReturn ONLY valid JSON matching the required schema.\nDo not include markdown fences, commentary, or extra text.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are Agent 0, the Governance News Scout for an AI Safety & Governance newsletter.\n\nYour role is to analyze RSS items and select only the most relevant, high-quality, recent stories related to:\n- AI safety\n- AI governance\n- AI regulation and policy\n- AI audits, assurance, and risk management\n- model evaluation, red teaming, guardrails\n- enterprise AI controls and compliance\n\nStrict rules:\n- You MUST filter out irrelevant, duplicate, low-quality, or purely promotional content\n- You MUST prioritize relevance to AI safety and governance over general AI news\n- You MUST prioritize recency and practical importance\n- You MUST NOT hallucinate or invent information\n- You MUST base your output only on the provided RSS items\n\nSafety and tone rules:\n- When describing political, legal, or child-safety-related stories, you MUST use neutral, factual, non-partisan language\n- You MUST avoid provocative, inflammatory, or emotionally charged wording\n- You MUST avoid repeating raw headlines if they contain politically sensitive or charged phrasing\n- For each selected story, you MUST provide a neutralized summary and neutralized newsletter angle suitable for downstream writing\n\nOutput rules:\n- You MUST return ONLY a valid JSON object\n- No explanations, no extra text\n- Follow the exact required structure\n\nYou are not a writer. You are a selector and analyst."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1952,
+        -704
+      ],
+      "id": "466b17c4-5001-48ea-a937-2d9afc2f859c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1616,
+        -288
+      ],
+      "id": "1fa1f2df-c096-4c3b-a91a-7d9ab1e510ec",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "fErwEMBgcf9BEObX",
+          "name": "AI_Agent_001"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"selected_items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"rank\": { \"type\": \"number\" },\n          \"title\": { \"type\": \"string\" },\n          \"source\": { \"type\": \"string\" },\n          \"date\": { \"type\": \"string\" },\n          \"link\": { \"type\": \"string\" },\n          \"why_it_matters\": { \"type\": \"string\" },\n          \"newsletter_angle\": { \"type\": \"string\" }\n        },\n        \"required\": [\n          \"rank\",\n          \"title\",\n          \"why_it_matters\",\n          \"newsletter_angle\"\n        ]\n      }\n    },\n    \"primary_story\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"title\": { \"type\": \"string\" },\n        \"reason\": { \"type\": \"string\" }\n      },\n      \"required\": [\"title\", \"reason\"]\n    },\n    \"article_thesis\": { \"type\": \"string\" },\n    \"suggested_newsletter_title\": { \"type\": \"string\" }\n  },\n  \"required\": [\n    \"selected_items\",\n    \"primary_story\",\n    \"article_thesis\",\n    \"suggested_newsletter_title\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1808,
+        -384
+      ],
+      "id": "02c3bc81-4936-48e2-9aed-0c2708308636",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write an AI safety and governance newsletter article using the curated output from Agent 0.\n\nPrimary story:\n{{ $node[\"AI Agent\"].json[\"output\"][\"primary_story_neutral_title\"] }}\n\nReason this story was selected:\n{{ $node[\"AI Agent\"].json[\"output\"][\"primary_story\"][\"reason\"] }}\n\nArticle thesis:\n{{ $json[\"output\"][\"article_thesis\"] }}\n\nSuggested newsletter title:\n{{ $json[\"output\"][\"suggested_newsletter_title\"] }}\n\nSelected items:\n{{ JSON.stringify($json[\"output\"][\"selected_items\"], null, 2) }}\n\nRequirements:\n- Write in a practical, credible, non-hype tone\n- Focus on governance, risk, and operational implications\n- Do not exaggerate compliance or safety claims\n- Separate facts from interpretation\n\nSet:\n- debug_primary_story = the primary story title you received\n- debug_item_count = number of selected_items\n\nReturn ONLY valid JSON.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are Agent 1, the Writer for an AI Safety & Governance newsletter.\n\nUse the selected news briefing to write a high-quality newsletter article.\n\nRequirements:\n- Write in a practical, credible, non-hype tone\n- Focus on why the story matters for governance, risk, controls, and operational reality\n- Do not exaggerate compliance or safety claims\n- Separate facts from interpretation\n- Highlight enterprise implications\n- End with key takeaways\n\nYou must return ONLY valid JSON matching the required schema."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1040,
+        -704
+      ],
+      "id": "cc2c070e-211b-497b-87be-bc8f277af936",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      rss_items: items.map(item => ({\n        title: item.json.title ?? \"\",\n        link: item.json.link ?? \"\",\n        pubDate: item.json.pubDate ?? \"\",\n        creator: item.json.creator ?? item.json[\"dc:creator\"] ?? \"\",\n        contentSnippet: item.json.contentSnippet ?? \"\",\n        content: item.json.content ?? \"\",\n        categories: item.json.categories ?? []\n      }))\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2368,
+        -704
+      ],
+      "id": "b31f70e3-d312-47dd-8ba9-f65b78e0c1f1",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": { \"type\": \"string\" },\n    \"summary\": { \"type\": \"string\" },\n    \"article\": { \"type\": \"string\" },\n    \"key_takeaways\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"linkedin_teaser\": { \"type\": \"string\" }\n  },\n  \"required\": [\n    \"debug_primary_story\",\n    \"debug_item_count\",\n    \"title\",\n    \"summary\",\n    \"article\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -976,
+        -416
+      ],
+      "id": "5d10d958-5ab3-441b-83d9-92c06425f43e",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => {\n  const policy = {\n    policy_name: \"Seagate AI Policy Loader\",\n    version: \"2026-04-07\",\n    source_documents: [\n      \"11-2000 Generative AI Policy\",\n      \"11-9001 Data Governance Principles Policy\",\n      \"Legal Do's and Don'ts - Seagate Copilot\",\n      \"Public Generative AI Guidelines\"\n    ],\n\n    internal_policy: [\n      \"No personal data in prompts or outputs for public generative AI tools.\",\n      \"Avoid inputting personal data into private generative AI tools unless unavoidable and approved under privacy review procedures.\",\n      \"Do not include Seagate Restricted Information, Seagate Confidential Information, or Seagate Internal Information in public generative AI prompts.\",\n      \"Do not copy AI output verbatim; treat output as a starting point and verify before use.\",\n      \"All AI output must be human-reviewed, fact-checked, and validated before internal or external business use.\",\n      \"Content must not be misleading, harmful, offensive, discriminatory, or inaccurate.\",\n      \"Do not use AI to make or materially influence decisions that significantly affect individuals.\",\n      \"Disclose AI use appropriately, especially for external-facing content.\",\n      \"Document model/version, prompts used, outputs created, and how output was reviewed when AI is used in significant decisions or where sensitive data is involved.\",\n      \"Manager awareness and approval are required for the intended use of generative AI for a specific purpose.\",\n      \"Do not use external/public AI output externally unless approved by the appropriate approver.\",\n      \"Protect third-party confidential information and intellectual property.\",\n      \"Do not search for or use data you should not have access to.\",\n      \"Use company-approved accounts and security practices; do not reuse SSO passwords and do not share credentials.\"\n    ],\n\n    governance_policy: [\n      \"Do not exaggerate compliance, safety, or regulatory claims.\",\n      \"Clearly distinguish fact from interpretation.\",\n      \"Avoid misleading regulatory framing.\",\n      \"Highlight operational implications and business impact.\",\n      \"Include limitations and caveats in AI-generated analysis.\",\n      \"Maintain transparency and explainability in how AI was used.\",\n      \"Document which AI system was used, the prompts used, and, where relevant, the training data context at a high level.\",\n      \"Higher-risk use cases require stronger validation, cross-checking, and subject matter expert review.\",\n      \"Where AI is used autonomously or where law or user interest requires it, disclose AI use.\",\n      \"Monitor for bias, fairness issues, and discriminatory outcomes.\"\n    ],\n\n    privacy_policy: [\n      \"Process personal data lawfully and according to applicable privacy laws.\",\n      \"Provide fairness and transparency regarding what personal data is collected, why it is used, and who it is shared with.\",\n      \"Use personal data only for specific, defined purposes.\",\n      \"Apply data minimization: collect only relevant and necessary personal data.\",\n      \"Embed privacy by design and by default into products, services, and workflows.\",\n      \"Respect data subject rights including access, correction, deletion, restriction, and related requests.\",\n      \"Use anonymization or pseudonymization where possible.\",\n      \"Consult the Privacy Legal Team or privacy review process when required.\"\n    ],\n\n    security_policy: [\n      \"Protect Seagate data according to data classification requirements.\",\n      \"Apply appropriate technical, administrative, and physical safeguards.\",\n      \"Use access controls, encryption, auditing, and secure handling procedures where appropriate.\",\n      \"Do not share credentials or permit unauthorized access.\",\n      \"Report suspected or confirmed security incidents promptly.\",\n      \"Perform vendor/security review for new private generative AI offerings or vendors.\"\n    ],\n\n    accountability_policy: [\n      \"Maintain records of AI usage and data processing activities.\",\n      \"Keep logs of data sources, prompts, outputs, disclosures, and approvals where applicable.\",\n      \"Ensure monitoring and auditability for products, services, or processes using AI.\",\n      \"Maintain evidence of review, validation, and risk mitigation steps.\"\n    ],\n\n    prohibited_inputs: [\n      \"Personal data in public generative AI prompts.\",\n      \"Seagate Restricted Information in public generative AI prompts.\",\n      \"Seagate Confidential Information in public generative AI prompts.\",\n      \"Seagate Internal Information in public generative AI prompts where prohibited.\",\n      \"Proprietary source code.\",\n      \"Non-released product development details.\",\n      \"Potential M&A transaction information.\",\n      \"Billing records, product quotes, and special pricing details.\",\n      \"Third-party confidential information without proper authorization.\"\n    ],\n\n    approval_requirements: [\n      \"External use of public generative AI output requires VP approval.\",\n      \"Use cases involving personal data in private generative AI require privacy review/approval.\",\n      \"Use cases involving restricted/confidential data require appropriate stakeholder approval and controls.\",\n      \"Managers must be aware of and approve intended AI use for specific purposes.\"\n    ],\n\n    human_review_checklist: [\n      \"Check factual accuracy.\",\n      \"Check completeness.\",\n      \"Check for hallucinations or fabricated citations/links.\",\n      \"Check for harmful, offensive, or discriminatory content.\",\n      \"Check for bias and unfair treatment of protected groups.\",\n      \"Check for copyright or IP concerns.\",\n      \"Check for confidential or personal data leakage.\",\n      \"Check whether claims are overstated or misleading.\",\n      \"Check whether caveats and limitations are included.\",\n      \"Check whether disclosure/labeling is needed.\"\n    ],\n\n    reviewer_rules: [\n      \"Flag any output containing personal data, confidential data, source code, or sensitive internal business information.\",\n      \"Flag any output that sounds definitive without evidence.\",\n      \"Flag compliance or safety claims that are not supported.\",\n      \"Flag recommendations that materially affect individuals.\",\n      \"Flag content that lacks disclosure when AI use should be disclosed.\",\n      \"Flag content with no limitations, caveats, or human review evidence.\"\n    ],\n\n    recommended_labels: {\n      ai_disclosure_examples: [\n        \"Created using AI.\",\n        \"This content was created using Seagate Copilot.\",\n        \"Draft generated with AI and reviewed by a human.\"\n      ],\n      risk_levels: [\"low\", \"medium\", \"high\", \"restricted\"],\n      decision_status: [\"approve\", \"revise\", \"escalate\", \"reject\"]\n    }\n  };\n\n  return {\n    json: {\n      ...item.json,\n      policy\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -704
+      ],
+      "id": "5cf986f8-1569-4e10-95dc-2ad82744aa6b",
+      "name": "Policy_Loader"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Review the following AI safety and governance newsletter draft.\n\nTitle:\n{{ $json[\"output\"][\"title\"] }}\n\nSummary:\n{{ $json[\"output\"][\"summary\"] }}\n\nArticle:\n{{ $json[\"output\"][\"article\"] }}\n\nKey takeaways:\n{{ JSON.stringify($json[\"output\"][\"key_takeaways\"], null, 2) }}\n\nInternal policy:\n{{ JSON.stringify($json[\"policy\"][\"internal_policy\"], null, 2) }}\n\nGovernance policy:\n{{ JSON.stringify($json[\"policy\"][\"governance_policy\"], null, 2) }}\n\nEvaluate the draft for:\n- exaggerated compliance or safety claims\n- unsupported assertions\n- misleading regulatory or legal framing\n- missing caveats or limitations\n- overly promotional or hype-driven language\n- weak distinction between fact and interpretation\n- weak governance or operational framing\n- internal policy conflicts\n- privacy or security issues\n- disclosure requirements\n\nSTATUS RULES:\nYou MUST return ONE of these values only:\n- \"approve\"\n- \"revise\"\n- \"escalate\"\n- \"reject\"\n\nDo not use any other value.\n\nSCORING RULE:\n- 8-10 = approve\n- 5-7 = revise\n- 3-4 = escalate\n- 0-2 = reject\n\nStatus MUST be consistent with score.\n\nReturn ONLY valid JSON.\n\nSTRICT OUTPUT RULES:\n- You MUST include ALL fields\n- You MUST NOT omit any field\n- You MUST NOT rename fields\n- You MUST NOT add extra fields\n- Every array field MUST always be present, even if empty\n- review_summary MUST always be a non-empty string\n\nRequired fields:\n- score\n- status\n- internal_policy_issues\n- governance_issues\n- privacy_security_issues\n- missing_caveats\n- required_disclosure\n- recommended_edits\n- review_summary",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are Agent 2, the AI Governance Reviewer.\n\nYour role is to review a newsletter draft against internal policy and external AI governance communication standards.\n\nYou must:\n- use the article provided in the input\n- use the policy lists provided in the input\n- identify policy violations, governance weaknesses, and missing caveats\n- avoid asking the user for the article if the article is already present in the input\n- return ONLY valid JSON matching the required schema"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -32,
+        -704
+      ],
+      "id": "ea039642-f552-440e-a670-f49be9314a80",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"score\": {\n      \"type\": \"number\"\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\"approve\", \"revise\", \"escalate\", \"reject\"]\n    },\n    \"internal_policy_issues\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"governance_issues\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"privacy_security_issues\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"missing_caveats\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"required_disclosure\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"recommended_edits\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"review_summary\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"score\",\n    \"status\",\n    \"internal_policy_issues\",\n    \"governance_issues\",\n    \"privacy_security_issues\",\n    \"missing_caveats\",\n    \"required_disclosure\",\n    \"recommended_edits\",\n    \"review_summary\"\n  ],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        -416
+      ],
+      "id": "946aa838-099f-401f-8310-b83918cee70a",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Revise the newsletter draft below using the reviewer findings.\n\nOriginal title:\n{{ $node[\"AI Agent1\"].json[\"output\"][\"title\"] }}\n\nOriginal summary:\n{{ $node[\"AI Agent1\"].json[\"output\"][\"summary\"] }}\n\nOriginal article:\n{{ $node[\"AI Agent1\"].json[\"output\"][\"article\"] }}\n\nOriginal key takeaways:\n{{ JSON.stringify($node[\"AI Agent1\"].json[\"output\"][\"key_takeaways\"], null, 2) }}\n\nOriginal LinkedIn teaser:\n{{ $node[\"AI Agent1\"].json[\"output\"][\"linkedin_teaser\"] }}\n\n-----------------------------------\nREVIEWER OUTPUT (DO NOT MODIFY)\n-----------------------------------\n\nScore (DO NOT CHANGE):\n{{ $node[\"AI Agent2\"].json[\"output\"][\"score\"] }}\n\nStatus (DO NOT CHANGE):\n{{ $node[\"AI Agent2\"].json[\"output\"][\"status\"] }}\n\nInternal policy issues:\n{{ JSON.stringify($json[\"output\"][\"internal_policy_issues\"], null, 2) }}\n\nGovernance issues:\n{{ JSON.stringify($json[\"output\"][\"governance_issues\"], null, 2) }}\n\nMissing caveats:\n{{ JSON.stringify($json[\"output\"][\"missing_caveats\"], null, 2) }}\n\nRecommended edits:\n{{ JSON.stringify($json[\"output\"][\"recommended_edits\"], null, 2) }}\n\n-----------------------------------\n\nRevision requirements:\n- Keep the original argument and practical tone\n- Improve accuracy and policy alignment\n- Add needed caveats without making the article too legalistic\n- Remove absolute or overstated language where needed\n- Keep fact and interpretation clearly separated\n- Ensure the content is fit for human review before business use\n- Do not include debug text\n- Do not mention that this was revised by an AI\n\n-----------------------------------\n\nReturn ONLY valid JSON.\n\nSTRICT OUTPUT RULES:\n- You MUST include ALL fields\n- You MUST NOT omit any field\n- You MUST NOT rename fields\n- You MUST NOT add extra fields\n\nRequired fields:\n- title\n- summary\n- article\n- key_takeaways\n- linkedin_teaser\n- revision_notes\n- score\n- status\n\nCRITICAL:\n- score MUST be copied EXACTLY from input\n- status MUST be copied EXACTLY from input\n- DO NOT modify score or status under any condition",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are Agent 3, the Revision Editor for an AI Safety & Governance newsletter.\n\nYour job is to revise the draft using the reviewer findings.\n\nYou must:\n- preserve the original thesis, structure, and practical tone\n- fix internal policy issues\n- fix governance and regulatory framing issues\n- add missing caveats where needed\n- reduce overclaiming\n- improve distinction between fact and interpretation\n- keep the article readable and publication-ready\n\nYou are not writing from scratch unless necessary.\nYou are revising the provided draft.\n\nCRITICAL RULES:\n- You MUST return ONLY valid JSON (no text before or after)\n- You MUST include ALL required fields\n- You MUST NOT omit any field\n- You MUST NOT rename fields\n- You MUST NOT add extra fields\n\nFIELD HANDLING RULES:\n- title, summary, article, key_takeaways, linkedin_teaser, revision_notes → revise as needed\n- score → MUST be copied EXACTLY from input (no changes)\n- status → MUST be copied EXACTLY from input (no changes)\n\nDo NOT recompute, reinterpret, or modify score and status.\n\nIf unsure, copy them verbatim.\n\nReturn ONLY valid JSON matching the required schema."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        896,
+        -720
+      ],
+      "id": "e9595e1c-a6ce-4c9b-b001-67b9ccf87657",
+      "name": "AI Agent3"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"title\": { \"type\": \"string\" },\n    \"summary\": { \"type\": \"string\" },\n    \"article\": { \"type\": \"string\" },\n    \"key_takeaways\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"linkedin_teaser\": { \"type\": \"string\" },\n    \"revision_notes\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"score\": { \"type\": \"number\" },\n    \"status\": { \"type\": \"string\" }\n  },\n  \"required\": [\n    \"title\",\n    \"summary\",\n    \"article\",\n    \"key_takeaways\",\n    \"linkedin_teaser\",\n    \"revision_notes\"\n  ]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        -400
+      ],
+      "id": "466fb511-2bb4-4afe-bed0-699527f39092",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=html",
+        "binaryPropertyName": "=data",
+        "options": {
+          "fileName": "=newsletter_review_pack_{{ new Date().toISOString().replace(/[:.]/g, \"-\") }}.html"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1824,
+        -720
+      ],
+      "id": "639a3566-673e-4c0e-8d57-0f8d020c02fc",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2736,
+        -704
+      ],
+      "id": "eba8076d-d3f0-4e4e-a66c-20efa49262c7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputItems = $json[\"rss_items\"] || [];\n\nif (!Array.isArray(inputItems)) {\n  throw new Error(\"rss_items must be an array\");\n}\n\nconst seenLinks = new Set();\nconst seenTitles = new Set();\nconst cleaned = [];\n\nfunction normalizeTitle(title) {\n  return (title || \"\")\n    .trim()\n    .toLowerCase()\n    .replace(/\\s+/g, \" \");\n}\n\nfunction extractDomain(url) {\n  try {\n    return new URL(url).hostname.replace(\"www.\", \"\");\n  } catch {\n    return \"unknown\";\n  }\n}\n\nfor (let i = 0; i < inputItems.length; i++) {\n  const item = inputItems[i];\n\n  const title = (item.title || \"\").trim();\n  const link = (item.link || \"\").trim();\n\n  if (!title || !link) continue;\n\n  if (seenLinks.has(link)) continue;\n  seenLinks.add(link);\n\n  const normTitle = normalizeTitle(title);\n  if (seenTitles.has(normTitle)) continue;\n  seenTitles.add(normTitle);\n\n  const spamPatterns = [\"subscribe\", \"sponsored\", \"advertisement\", \"promo\"];\n  const isSpam = spamPatterns.some(p => title.toLowerCase().includes(p));\n  if (isSpam) continue;\n\n  const cleanedItem = {\n    id: `rss_${i}_${Date.now()}`,\n    title,\n    link,\n    source: item.source || extractDomain(link),\n    date: item.date || item.pubDate || null,\n    creator: item.creator || \"\",\n    contentSnippet: item.contentSnippet || \"\",\n    content: item.content || \"\",\n    categories: Array.isArray(item.categories) ? item.categories : [],\n    source_domain: extractDomain(link),\n    ingested_at: new Date().toISOString(),\n    raw_index: i,\n  };\n\n  cleaned.push(cleanedItem);\n}\n\nreturn [\n  {\n    json: {\n      rss_items: cleaned,\n      input_count: inputItems.length,\n      cleaned_count: cleaned.length,\n      removed_count: inputItems.length - cleaned.length,\n      checkpoint: \"A0_input_guardrail\",\n      status: cleaned.length ? \"pass\" : \"fail\",\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2160,
+        -704
+      ],
+      "id": "0f6f7114-a7eb-4163-a59c-66e536d93788",
+      "name": "Guardrail_A0_Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardrail_A0_Output\nconst rawAgentOutput = $input.all()[0]?.json ?? {};\n\n// Handle possible nesting under \"output\"\nconst agentOutput = rawAgentOutput.output ?? rawAgentOutput;\n\n// Pull cleaned RSS items from Guardrail_A0_Input\nconst guardrailInputNode = $(\"Guardrail_A0_Input\").first().json;\nconst rssItems = guardrailInputNode.rss_items || [];\n\nif (!Array.isArray(rssItems)) {\n  throw new Error(\"Guardrail_A0_Input.rss_items is missing or not an array\");\n}\n\nconst selected = agentOutput.selected_items;\n\n// primary_story may be a string OR an object like { title, reason }\nconst primaryStoryRaw = agentOutput.primary_story;\nconst primaryStory =\n  typeof primaryStoryRaw === \"string\"\n    ? primaryStoryRaw\n    : primaryStoryRaw?.title || \"\";\n\nconst articleThesis = agentOutput.article_thesis;\nconst suggestedTitle = agentOutput.suggested_newsletter_title;\n\nconst issues = [];\nconst warnings = [];\nconst checks = [];\n\nfunction addCheck(check_id, result, details = \"\") {\n  checks.push({ check_id, result, details });\n}\n\nfunction normalizeText(value) {\n  return String(value || \"\")\n    .trim()\n    .toLowerCase()\n    .replace(/\\s+/g, \" \");\n}\n\nfunction isNonEmptyString(value) {\n  return typeof value === \"string\" && value.trim().length > 0;\n}\n\nfunction isWeakText(value) {\n  const text = String(value || \"\").trim();\n  return !text || text.length < 20;\n}\n\n// Build allowed sets from input RSS\nconst allowedLinks = new Set();\nconst allowedTitles = new Set();\n\nfor (const item of rssItems) {\n  if (item.link) allowedLinks.add(String(item.link).trim());\n  if (item.title) allowedTitles.add(normalizeText(item.title));\n}\n\n// 1. selected_items structure\nif (!Array.isArray(selected)) {\n  issues.push(\"selected_items must be an array\");\n  addCheck(\"selected_items_array\", \"fail\", \"selected_items is missing or not an array\");\n} else {\n  addCheck(\"selected_items_array\", \"pass\");\n}\n\nconst safeSelected = Array.isArray(selected) ? selected : [];\n\n// 2. count check\nif (safeSelected.length < 1) {\n  issues.push(\"At least 1 selected item is required\");\n  addCheck(\"selected_count_min\", \"fail\", `count=${safeSelected.length}`);\n} else {\n  addCheck(\"selected_count_min\", \"pass\", `count=${safeSelected.length}`);\n}\n\nif (safeSelected.length > 5) {\n  issues.push(\"selected_items cannot exceed 5 items\");\n  addCheck(\"selected_count_max\", \"fail\", `count=${safeSelected.length}`);\n} else {\n  addCheck(\"selected_count_max\", \"pass\", `count=${safeSelected.length}`);\n}\n\n// 3. top-level required fields\nif (!isNonEmptyString(primaryStory)) {\n  issues.push(\"primary_story is required\");\n  addCheck(\"primary_story_present\", \"fail\");\n} else {\n  addCheck(\"primary_story_present\", \"pass\");\n}\n\nif (!isNonEmptyString(articleThesis)) {\n  issues.push(\"article_thesis is required\");\n  addCheck(\"article_thesis_present\", \"fail\");\n} else {\n  addCheck(\"article_thesis_present\", \"pass\");\n}\n\nif (!isNonEmptyString(suggestedTitle)) {\n  issues.push(\"suggested_newsletter_title is required\");\n  addCheck(\"suggested_newsletter_title_present\", \"fail\");\n} else {\n  addCheck(\"suggested_newsletter_title_present\", \"pass\");\n}\n\n// per-item validation stays the same...\n// final return should store agentOutput, not rawAgentOutput\nreturn [\n  {\n    json: {\n      checkpoint: \"A0_post_agent_output_guardrail\",\n      status: issues.length ? \"fail\" : warnings.length ? \"warning\" : \"pass\",\n      risk_score: issues.length ? 0.4 : warnings.length ? 0.2 : 0.1,\n      issues,\n      warnings,\n      checks,\n      summary: {\n        input_rss_count: rssItems.length,\n        selected_count: safeSelected.length,\n        issue_count: issues.length,\n        warning_count: warnings.length\n      },\n      agent0_output_validated: agentOutput,\n      checked_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1632,
+        -704
+      ],
+      "id": "ad1c853b-2c94-4375-b421-8df6275ab971",
+      "name": "Guardrail_A0_output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verification_A0\n// Converts Guardrail_A0_Output into audit-style verification evidence\n\nconst guardrail = $json;\n\nconst status = guardrail.status || \"fail\";\nconst riskScore = Number(guardrail.risk_score ?? 0.9);\nconst issues = Array.isArray(guardrail.issues) ? guardrail.issues : [];\nconst warnings = Array.isArray(guardrail.warnings) ? guardrail.warnings : [];\nconst checks = Array.isArray(guardrail.checks) ? guardrail.checks : [];\nconst summary = guardrail.summary || {};\nconst validatedOutput = guardrail.agent0_output_validated || {};\n\nfunction deriveSeverity(status, riskScore, issuesCount) {\n  if (status === \"fail\" || riskScore >= 0.75 || issuesCount >= 3) return \"high\";\n  if (status === \"warning\" || riskScore >= 0.35 || issuesCount >= 1) return \"medium\";\n  return \"low\";\n}\n\nfunction deriveAction(status, severity) {\n  if (status === \"fail\") return \"block_and_retry_agent_0\";\n  if (status === \"warning\" && severity === \"medium\") return \"continue_with_review_flag\";\n  if (status === \"warning\" && severity === \"high\") return \"manual_review\";\n  return \"continue\";\n}\n\nfunction mapPolicies(issues, warnings, checks) {\n  const mappings = [];\n\n  const hasSchemaProblem =\n    issues.some(x => x.includes(\"missing required field\")) ||\n    issues.some(x => x.includes(\"selected_items must be an array\"));\n\n  const hasDuplicateProblem =\n    issues.some(x => x.toLowerCase().includes(\"duplicate\"));\n\n  const hasTraceabilityProblem =\n    issues.some(x => x.includes(\"link not found in Guardrail_A0_Input\")) ||\n    issues.some(x => x.includes(\"primary_story does not match\"));\n\n  const hasRationaleWeakness =\n    warnings.some(x => x.includes(\"why_it_matters is weak\")) ||\n    warnings.some(x => x.includes(\"newsletter_angle is weak\")) ||\n    warnings.some(x => x.includes(\"article_thesis looks too short\"));\n\n  // POL-NEWS-001: Story selection discipline\n  mappings.push({\n    policy_id: \"POL-NEWS-001\",\n    control: \"Story selection discipline\",\n    result: issues.length === 0 ? \"pass\" : \"warning\"\n  });\n\n  // POL-NEWS-002: Duplicate prevention\n  mappings.push({\n    policy_id: \"POL-NEWS-002\",\n    control: \"Duplicate story prevention\",\n    result: hasDuplicateProblem ? \"fail\" : \"pass\"\n  });\n\n  // POL-NEWS-003: Output schema completeness\n  mappings.push({\n    policy_id: \"POL-NEWS-003\",\n    control: \"Output schema completeness\",\n    result: hasSchemaProblem ? \"fail\" : \"pass\"\n  });\n\n  // POL-NEWS-004: Source traceability\n  mappings.push({\n    policy_id: \"POL-NEWS-004\",\n    control: \"Source traceability to input RSS\",\n    result: hasTraceabilityProblem ? \"fail\" : \"pass\"\n  });\n\n  // POL-NEWS-005: Editorial rationale quality\n  mappings.push({\n    policy_id: \"POL-NEWS-005\",\n    control: \"Editorial rationale quality\",\n    result: hasRationaleWeakness ? \"warning\" : \"pass\"\n  });\n\n  return mappings;\n}\n\nconst severity = deriveSeverity(status, riskScore, issues.length);\nconst recommendedAction = deriveAction(status, severity);\nconst policyMapping = mapPolicies(issues, warnings, checks);\n\nconst controlResults = checks.map(check => ({\n  check_id: check.check_id,\n  result: check.result,\n  details: check.details || \"\"\n}));\n\nconst continuePipeline = status !== \"fail\";\n\nconst runId = `newsletter_${new Date().toISOString().replace(/[:.]/g, \"-\")}`;\n\nreturn [\n  {\n    json: {\n      run_id: runId,\n      checkpoint: \"Verification_A0\",\n      agent: \"Agent 0 - News Scout\",\n      verification_status: status,\n      risk_score: riskScore,\n      severity: severity,\n      recommended_action: recommendedAction,\n      continue_pipeline: continuePipeline,\n\n      counts: {\n        input_rss_count: summary.input_rss_count ?? 0,\n        selected_count: summary.selected_count ?? 0,\n        issue_count: summary.issue_count ?? issues.length,\n        warning_count: summary.warning_count ?? warnings.length\n      },\n\n      issues: issues,\n      warnings: warnings,\n      control_results: controlResults,\n      policy_mapping: policyMapping,\n\n      evidence: {\n        primary_story: validatedOutput.primary_story || null,\n        article_thesis: validatedOutput.article_thesis || null,\n        suggested_newsletter_title: validatedOutput.suggested_newsletter_title || null,\n        selected_items: validatedOutput.selected_items || []\n      },\n\n      verified_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        -704
+      ],
+      "id": "95b4d7a9-dff8-4783-87ba-e9952dd0eaec",
+      "name": "Verification_A0"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bbe7bba7-3b7f-4aa1-b42b-59631fa1478f",
+              "leftValue": "={{$json.continue_pipeline}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1216,
+        -704
+      ],
+      "id": "7e19e848-4c6d-4e9f-994e-12081e904ab8",
+      "name": "IF_A0_Continue"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardrail_A1_Output\n// Validates Agent 1 draft output against Verification_A0 evidence\n\nconst agentOutput = $input.all()[0]?.json ?? {};\nconst verificationA0 = $(\"Verification_A0\").first().json;\n\nconst selectedStories = verificationA0?.evidence?.selected_items || [];\nconst allowedLinks = new Set(\n  selectedStories.map(x => String(x.link || \"\").trim()).filter(Boolean)\n);\n\nconst issues = [];\nconst warnings = [];\nconst checks = [];\n\nfunction addCheck(check_id, result, details = \"\") {\n  checks.push({ check_id, result, details });\n}\n\nfunction isNonEmptyString(value) {\n  return typeof value === \"string\" && value.trim().length > 0;\n}\n\nfunction isWeakText(value, min = 40) {\n  return !isNonEmptyString(value) || String(value).trim().length < min;\n}\n\nfunction extractUrls(text) {\n  const matches = String(text || \"\").match(/https?:\\/\\/[^\\s)]+/g);\n  return matches || [];\n}\n\nconst title = agentOutput.title;\nconst summary = agentOutput.summary;\nconst article = agentOutput.article;\nconst keyTakeaways = agentOutput.key_takeaways;\nconst linkedinTeaser = agentOutput.linkedin_teaser;\nconst storyTrace = agentOutput.story_trace;\n\n// 1. required top-level fields\nif (!isNonEmptyString(title)) {\n  issues.push(\"title is required\");\n  addCheck(\"title_present\", \"fail\");\n} else {\n  addCheck(\"title_present\", \"pass\");\n}\n\nif (!isNonEmptyString(summary)) {\n  issues.push(\"summary is required\");\n  addCheck(\"summary_present\", \"fail\");\n} else {\n  addCheck(\"summary_present\", \"pass\");\n  if (isWeakText(summary, 30)) {\n    warnings.push(\"summary looks too short\");\n    addCheck(\"summary_strength\", \"warning\", `length=${String(summary).trim().length}`);\n  } else {\n    addCheck(\"summary_strength\", \"pass\", `length=${String(summary).trim().length}`);\n  }\n}\n\nif (!isNonEmptyString(article)) {\n  issues.push(\"article is required\");\n  addCheck(\"article_present\", \"fail\");\n} else {\n  addCheck(\"article_present\", \"pass\");\n  if (isWeakText(article, 200)) {\n    warnings.push(\"article looks too short\");\n    addCheck(\"article_strength\", \"warning\", `length=${String(article).trim().length}`);\n  } else {\n    addCheck(\"article_strength\", \"pass\", `length=${String(article).trim().length}`);\n  }\n}\n\nif (!Array.isArray(keyTakeaways)) {\n  issues.push(\"key_takeaways must be an array\");\n  addCheck(\"key_takeaways_array\", \"fail\");\n} else {\n  addCheck(\"key_takeaways_array\", \"pass\");\n  if (keyTakeaways.length < 2) {\n    warnings.push(\"key_takeaways has fewer than 2 items\");\n    addCheck(\"key_takeaways_count\", \"warning\", `count=${keyTakeaways.length}`);\n  } else {\n    addCheck(\"key_takeaways_count\", \"pass\", `count=${keyTakeaways.length}`);\n  }\n}\n\nif (!isNonEmptyString(linkedinTeaser)) {\n  issues.push(\"linkedin_teaser is required\");\n  addCheck(\"linkedin_teaser_present\", \"fail\");\n} else {\n  addCheck(\"linkedin_teaser_present\", \"pass\");\n}\n\nif (!Array.isArray(storyTrace)) {\n  issues.push(\"story_trace must be an array\");\n  addCheck(\"story_trace_array\", \"fail\");\n} else {\n  addCheck(\"story_trace_array\", \"pass\");\n}\n\n// 2. banned phrases\nconst bannedPhrases = [\n  \"fully compliant\",\n  \"guaranteed safe\",\n  \"guarantees safety\",\n  \"proves safety\",\n  \"zero risk\",\n  \"completely safe\"\n];\n\nconst combinedText = [\n  title,\n  summary,\n  article,\n  linkedinTeaser,\n  ...(Array.isArray(keyTakeaways) ? keyTakeaways : [])\n].join(\" \\n \");\n\nconst foundBanned = bannedPhrases.filter(p =>\n  combinedText.toLowerCase().includes(p)\n);\n\nif (foundBanned.length > 0) {\n  issues.push(`Banned overclaim phrases found: ${foundBanned.join(\", \")}`);\n  addCheck(\"banned_phrase_scan\", \"fail\", foundBanned.join(\", \"));\n} else {\n  addCheck(\"banned_phrase_scan\", \"pass\");\n}\n\n// 3. link traceability\nconst urlsInArticle = extractUrls(combinedText);\nconst unsupportedUrls = urlsInArticle.filter(url => !allowedLinks.has(url));\n\nif (unsupportedUrls.length > 0) {\n  issues.push(`Unsupported URLs found in Agent 1 output: ${unsupportedUrls.join(\", \")}`);\n  addCheck(\"output_url_traceability\", \"fail\", unsupportedUrls.join(\", \"));\n} else {\n  addCheck(\"output_url_traceability\", \"pass\");\n}\n\n// 4. story_trace link checks\nif (Array.isArray(storyTrace)) {\n  for (let i = 0; i < storyTrace.length; i++) {\n    const item = storyTrace[i] || {};\n    const idx = i + 1;\n\n    if (!isNonEmptyString(item.title)) {\n      issues.push(`story_trace item ${idx} missing title`);\n    }\n\n    const link = String(item.link || \"\").trim();\n    if (!link) {\n      issues.push(`story_trace item ${idx} missing link`);\n    } else if (!allowedLinks.has(link)) {\n      issues.push(`story_trace item ${idx} link is not from Agent 0 selected stories`);\n    }\n  }\n}\n\n// 5. key takeaway quality\nif (Array.isArray(keyTakeaways)) {\n  keyTakeaways.forEach((item, i) => {\n    if (!isNonEmptyString(item)) {\n      issues.push(`key_takeaways item ${i + 1} is empty`);\n    } else if (String(item).trim().length < 15) {\n      warnings.push(`key_takeaways item ${i + 1} looks too short`);\n    }\n  });\n}\n\n// 6. status\nlet status = \"pass\";\nif (issues.length > 0) {\n  status = \"fail\";\n} else if (warnings.length > 0) {\n  status = \"warning\";\n}\n\nlet risk_score = 0.1;\nrisk_score += Math.min(issues.length * 0.12, 0.6);\nrisk_score += Math.min(warnings.length * 0.05, 0.2);\nrisk_score = Math.min(Number(risk_score.toFixed(2)), 0.95);\n\nreturn [\n  {\n    json: {\n      checkpoint: \"A1_post_agent_output_guardrail\",\n      status,\n      risk_score,\n      issues,\n      warnings,\n      checks,\n      summary: {\n        selected_story_count: selectedStories.length,\n        story_trace_count: Array.isArray(storyTrace) ? storyTrace.length : 0,\n        issue_count: issues.length,\n        warning_count: warnings.length\n      },\n      agent1_output_validated: agentOutput,\n      checked_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -704
+      ],
+      "id": "63d3b8a9-9dfd-4143-b181-7a2f5859fc27",
+      "name": "Guardrail_AI_Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verification_A1\nconst guardrail = $json;\n\nconst status = guardrail.status || \"fail\";\nconst riskScore = Number(guardrail.risk_score ?? 0.9);\nconst issues = Array.isArray(guardrail.issues) ? guardrail.issues : [];\nconst warnings = Array.isArray(guardrail.warnings) ? guardrail.warnings : [];\nconst checks = Array.isArray(guardrail.checks) ? guardrail.checks : [];\nconst summary = guardrail.summary || {};\nconst validatedOutput = guardrail.agent1_output_validated || {};\n\nfunction deriveSeverity(status, riskScore, issuesCount) {\n  if (status === \"fail\" || riskScore >= 0.75 || issuesCount >= 3) return \"high\";\n  if (status === \"warning\" || riskScore >= 0.35 || issuesCount >= 1) return \"medium\";\n  return \"low\";\n}\n\nfunction deriveAction(status, severity) {\n  if (status === \"fail\") return \"block_and_retry_agent_1\";\n  if (status === \"warning\" && severity === \"medium\") return \"continue_with_review_flag\";\n  if (status === \"warning\" && severity === \"high\") return \"manual_review\";\n  return \"continue\";\n}\n\nconst severity = deriveSeverity(status, riskScore, issues.length);\nconst recommendedAction = deriveAction(status, severity);\nconst continuePipeline = status !== \"fail\";\n\nconst controlResults = checks.map(check => ({\n  check_id: check.check_id,\n  result: check.result,\n  details: check.details || \"\"\n}));\n\nconst policyMapping = [\n  {\n    policy_id: \"POL-NEWS-006\",\n    control: \"Draft schema completeness\",\n    result: issues.some(x => x.includes(\"required\") || x.includes(\"must be an array\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-007\",\n    control: \"No unsupported source introduction\",\n    result: issues.some(x => x.includes(\"Unsupported URLs\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-008\",\n    control: \"No editorial overclaiming\",\n    result: issues.some(x => x.includes(\"Banned overclaim phrases\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-009\",\n    control: \"Traceability to selected stories\",\n    result: issues.some(x => x.includes(\"story_trace\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-010\",\n    control: \"Newsletter draft quality\",\n    result: warnings.length > 0 ? \"warning\" : \"pass\"\n  }\n];\n\nreturn [\n  {\n    json: {\n      run_id: $(\"Verification_A0\").first().json.run_id,\n      checkpoint: \"Verification_A1\",\n      agent: \"Agent 1 - Draft Writer\",\n      verification_status: status,\n      risk_score: riskScore,\n      severity,\n      recommended_action: recommendedAction,\n      continue_pipeline: continuePipeline,\n      counts: {\n        selected_story_count: summary.selected_story_count ?? 0,\n        story_trace_count: summary.story_trace_count ?? 0,\n        issue_count: summary.issue_count ?? issues.length,\n        warning_count: summary.warning_count ?? warnings.length\n      },\n      issues,\n      warnings,\n      control_results: controlResults,\n      policy_mapping: policyMapping,\n      evidence: {\n        title: validatedOutput.title || null,\n        summary: validatedOutput.summary || null,\n        article: validatedOutput.article || null,\n        key_takeaways: validatedOutput.key_takeaways || [],\n        linkedin_teaser: validatedOutput.linkedin_teaser || null,\n        story_trace: validatedOutput.story_trace || []\n      },\n      verified_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        -704
+      ],
+      "id": "7a93c31f-e57a-4d2d-9155-0a6f9d1ba2a8",
+      "name": "Verification_A1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6f827988-8cf4-4cfe-850b-125614d9bf5b",
+              "leftValue": "={{$json.continue_pipeline}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -416,
+        -704
+      ],
+      "id": "69b96432-c0fc-4a5a-8dfe-5c2744820be9",
+      "name": "IF_A1_Continue"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardrail_A2_Output\n// Validates Reviewer Agent (Agent 2) output after Policy_Loader\n\nconst rawAgentOutput = $input.all()[0]?.json ?? {};\nconst agentOutput = rawAgentOutput.output ?? rawAgentOutput;\n\nconst issues = [];\nconst warnings = [];\nconst checks = [];\n\nfunction addCheck(check_id, result, details = \"\") {\n  checks.push({ check_id, result, details });\n}\n\nfunction isNonEmptyString(value) {\n  return typeof value === \"string\" && value.trim().length > 0;\n}\n\nfunction isValidArray(value) {\n  return Array.isArray(value);\n}\n\nconst allowedStatuses = [\"approve\", \"revise\", \"escalate\", \"reject\"];\n\nconst status = agentOutput.status;\nconst score = agentOutput.score;\nconst internalPolicyIssues = agentOutput.internal_policy_issues;\nconst governanceIssues = agentOutput.governance_issues;\nconst privacySecurityIssues = agentOutput.privacy_security_issues;\nconst missingCaveats = agentOutput.missing_caveats;\nconst requiredDisclosure = agentOutput.required_disclosure;\nconst recommendedEdits = agentOutput.recommended_edits;\nconst reviewSummary = agentOutput.review_summary;\n\n// 1. required top-level fields\nif (!isNonEmptyString(status)) {\n  issues.push(\"status is required\");\n  addCheck(\"status_present\", \"fail\");\n} else if (!allowedStatuses.includes(status)) {\n  issues.push(`status must be one of: ${allowedStatuses.join(\", \")}`);\n  addCheck(\"status_allowed\", \"fail\", `status=${status}`);\n} else {\n  addCheck(\"status_allowed\", \"pass\", `status=${status}`);\n}\n\nif (typeof score !== \"number\" || Number.isNaN(score)) {\n  issues.push(\"score must be a number\");\n  addCheck(\"score_numeric\", \"fail\");\n} else {\n  addCheck(\"score_numeric\", \"pass\", `score=${score}`);\n  if (score < 0 || score > 10) {\n    warnings.push(\"score is outside recommended 0-10 range\");\n    addCheck(\"score_range\", \"warning\", `score=${score}`);\n  } else {\n    addCheck(\"score_range\", \"pass\", `score=${score}`);\n  }\n}\n\nif (!isNonEmptyString(reviewSummary)) {\n  issues.push(\"review_summary is required\");\n  addCheck(\"review_summary_present\", \"fail\");\n} else {\n  addCheck(\"review_summary_present\", \"pass\");\n  if (reviewSummary.trim().length < 40) {\n    warnings.push(\"review_summary looks too short\");\n    addCheck(\"review_summary_strength\", \"warning\", `length=${reviewSummary.trim().length}`);\n  } else {\n    addCheck(\"review_summary_strength\", \"pass\", `length=${reviewSummary.trim().length}`);\n  }\n}\n\n// 2. required arrays\nconst arrayFields = [\n  [\"internal_policy_issues\", internalPolicyIssues],\n  [\"governance_issues\", governanceIssues],\n  [\"privacy_security_issues\", privacySecurityIssues],\n  [\"missing_caveats\", missingCaveats],\n  [\"required_disclosure\", requiredDisclosure],\n  [\"recommended_edits\", recommendedEdits]\n];\n\nfor (const [fieldName, value] of arrayFields) {\n  if (!isValidArray(value)) {\n    issues.push(`${fieldName} must be an array`);\n    addCheck(`${fieldName}_array`, \"fail\");\n  } else {\n    addCheck(`${fieldName}_array`, \"pass\", `count=${value.length}`);\n  }\n}\n\n// safe arrays\nconst safeInternalPolicyIssues = Array.isArray(internalPolicyIssues) ? internalPolicyIssues : [];\nconst safeGovernanceIssues = Array.isArray(governanceIssues) ? governanceIssues : [];\nconst safePrivacySecurityIssues = Array.isArray(privacySecurityIssues) ? privacySecurityIssues : [];\nconst safeMissingCaveats = Array.isArray(missingCaveats) ? missingCaveats : [];\nconst safeRequiredDisclosure = Array.isArray(requiredDisclosure) ? requiredDisclosure : [];\nconst safeRecommendedEdits = Array.isArray(recommendedEdits) ? recommendedEdits : [];\n\nconst totalIssueCount =\n  safeInternalPolicyIssues.length +\n  safeGovernanceIssues.length +\n  safePrivacySecurityIssues.length +\n  safeMissingCaveats.length +\n  safeRequiredDisclosure.length;\n\n// 3. consistency checks\nif (status === \"approve\") {\n  if (totalIssueCount > 0 || safeRecommendedEdits.length > 0) {\n    warnings.push(\"status is approve but issues or edits are still present\");\n    addCheck(\"approve_consistency\", \"warning\", `issue_count=${totalIssueCount}, edits=${safeRecommendedEdits.length}`);\n  } else {\n    addCheck(\"approve_consistency\", \"pass\");\n  }\n}\n\nif (status === \"reject\") {\n  if (totalIssueCount === 0 && safeRecommendedEdits.length === 0) {\n    issues.push(\"status is reject but no issues or recommended edits were provided\");\n    addCheck(\"reject_consistency\", \"fail\");\n  } else {\n    addCheck(\"reject_consistency\", \"pass\", `issue_count=${totalIssueCount}, edits=${safeRecommendedEdits.length}`);\n  }\n}\n\nif (status === \"revise\") {\n  if (safeRecommendedEdits.length === 0) {\n    warnings.push(\"status is revise but recommended_edits is empty\");\n    addCheck(\"revise_consistency\", \"warning\");\n  } else {\n    addCheck(\"revise_consistency\", \"pass\", `edits=${safeRecommendedEdits.length}`);\n  }\n}\n\nif (status === \"escalate\") {\n  if (totalIssueCount === 0) {\n    warnings.push(\"status is escalate but no issue buckets contain findings\");\n    addCheck(\"escalate_consistency\", \"warning\");\n  } else {\n    addCheck(\"escalate_consistency\", \"pass\", `issue_count=${totalIssueCount}`);\n  }\n}\n\n// 4. empty payload check\nconst hasMeaningfulReview =\n  isNonEmptyString(status) ||\n  typeof score === \"number\" ||\n  isNonEmptyString(reviewSummary) ||\n  totalIssueCount > 0 ||\n  safeRecommendedEdits.length > 0;\n\nif (!hasMeaningfulReview) {\n  issues.push(\"Reviewer output appears empty\");\n  addCheck(\"review_not_empty\", \"fail\");\n} else {\n  addCheck(\"review_not_empty\", \"pass\");\n}\n\n// 5. optional item quality checks\nfor (const [fieldName, arr] of [\n  [\"internal_policy_issues\", safeInternalPolicyIssues],\n  [\"governance_issues\", safeGovernanceIssues],\n  [\"privacy_security_issues\", safePrivacySecurityIssues],\n  [\"missing_caveats\", safeMissingCaveats],\n  [\"required_disclosure\", safeRequiredDisclosure],\n  [\"recommended_edits\", safeRecommendedEdits]\n]) {\n  arr.forEach((item, idx) => {\n    if (typeof item !== \"string\" || item.trim().length === 0) {\n      issues.push(`${fieldName} item ${idx + 1} is empty or not a string`);\n    } else if (item.trim().length < 10) {\n      warnings.push(`${fieldName} item ${idx + 1} looks too short`);\n    }\n  });\n}\n\n// 6. status calculation\nlet guardrailStatus = \"pass\";\nif (issues.length > 0) {\n  guardrailStatus = \"fail\";\n} else if (warnings.length > 0) {\n  guardrailStatus = \"warning\";\n}\n\n// 7. risk score\nlet risk_score = 0.1;\nrisk_score += Math.min(issues.length * 0.12, 0.6);\nrisk_score += Math.min(warnings.length * 0.05, 0.2);\nrisk_score = Math.min(Number(risk_score.toFixed(2)), 0.95);\n\n// 8. return\nreturn [\n  {\n    json: {\n      checkpoint: \"A2_post_agent_output_guardrail\",\n      status: guardrailStatus,\n      risk_score,\n      issues,\n      warnings,\n      checks,\n      summary: {\n        total_issue_count: totalIssueCount,\n        recommended_edits_count: safeRecommendedEdits.length,\n        issue_count: issues.length,\n        warning_count: warnings.length\n      },\n      agent2_output_validated: agentOutput,\n      checked_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -704
+      ],
+      "id": "d5399c18-5d58-4859-8f08-960bf4131b73",
+      "name": "Guardrail_A2_Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verification_A2\nconst guardrail = $json;\n\nconst status = guardrail.status || \"fail\";\nconst riskScore = Number(guardrail.risk_score ?? 0.9);\nconst issues = Array.isArray(guardrail.issues) ? guardrail.issues : [];\nconst warnings = Array.isArray(guardrail.warnings) ? guardrail.warnings : [];\nconst checks = Array.isArray(guardrail.checks) ? guardrail.checks : [];\nconst summary = guardrail.summary || {};\nconst validatedOutput = guardrail.agent2_output_validated || {};\n\nfunction deriveSeverity(status, riskScore, issuesCount) {\n  if (status === \"fail\" || riskScore >= 0.75 || issuesCount >= 3) return \"high\";\n  if (status === \"warning\" || riskScore >= 0.35 || issuesCount >= 1) return \"medium\";\n  return \"low\";\n}\n\nfunction deriveAction(guardrailStatus, reviewerStatus, severity) {\n  if (guardrailStatus === \"fail\") return \"block_and_retry_agent_2\";\n  if (reviewerStatus === \"reject\") return \"stop_rejected\";\n  if (reviewerStatus === \"escalate\") return \"manual_review\";\n  if (reviewerStatus === \"revise\") return \"send_to_agent_3\";\n  if (guardrailStatus === \"warning\" && severity === \"high\") return \"manual_review\";\n  if (guardrailStatus === \"warning\" && severity === \"medium\") return \"continue_with_review_flag\";\n  return \"continue\";\n}\n\nconst reviewerStatus = validatedOutput.status || \"unknown\";\nconst severity = deriveSeverity(status, riskScore, issues.length);\nconst recommendedAction = deriveAction(status, reviewerStatus, severity);\n\n// keep IF compatibility if needed, though Switch is better after A2\nconst continuePipeline = status !== \"fail\" && reviewerStatus !== \"reject\";\n\nconst controlResults = checks.map(check => ({\n  check_id: check.check_id,\n  result: check.result,\n  details: check.details || \"\"\n}));\n\nconst policyMapping = [\n  {\n    policy_id: \"POL-NEWS-011\",\n    control: \"Reviewer schema completeness\",\n    result: issues.some(x => x.includes(\"required\") || x.includes(\"must be an array\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-012\",\n    control: \"Reviewer decision consistency\",\n    result: issues.some(x => x.includes(\"consistency\")) ? \"fail\" : warnings.some(x => x.includes(\"consistency\")) ? \"warning\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-013\",\n    control: \"Policy issue classification quality\",\n    result: warnings.length > 0 ? \"warning\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-014\",\n    control: \"Review traceability and editability\",\n    result: Array.isArray(validatedOutput.recommended_edits) && validatedOutput.recommended_edits.length > 0 ? \"pass\" : reviewerStatus === \"revise\" ? \"warning\" : \"pass\"\n  }\n];\n\nreturn [\n  {\n    json: {\n      run_id: $(\"Verification_A0\").first().json.run_id,\n      checkpoint: \"Verification_A2\",\n      agent: \"Agent 2 - Policy Reviewer\",\n      verification_status: status,\n      reviewer_status: reviewerStatus,\n      risk_score: riskScore,\n      severity,\n      recommended_action: recommendedAction,\n      continue_pipeline: continuePipeline,\n\n      counts: {\n        total_issue_count: summary.total_issue_count ?? 0,\n        recommended_edits_count: summary.recommended_edits_count ?? 0,\n        issue_count: summary.issue_count ?? issues.length,\n        warning_count: summary.warning_count ?? warnings.length\n      },\n\n      issues,\n      warnings,\n      control_results: controlResults,\n      policy_mapping: policyMapping,\n\n      evidence: {\n        status: validatedOutput.status || null,\n        score: validatedOutput.score ?? null,\n        internal_policy_issues: validatedOutput.internal_policy_issues || [],\n        governance_issues: validatedOutput.governance_issues || [],\n        privacy_security_issues: validatedOutput.privacy_security_issues || [],\n        missing_caveats: validatedOutput.missing_caveats || [],\n        required_disclosure: validatedOutput.required_disclosure || [],\n        recommended_edits: validatedOutput.recommended_edits || [],\n        review_summary: validatedOutput.review_summary || null\n      },\n\n      verified_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -704
+      ],
+      "id": "197ec89c-7005-41bc-bbc8-aaccda631c9f",
+      "name": "Verification_A2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.reviewer_status}}",
+                    "rightValue": "approve",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a6cf8e22-5bd1-4ac6-a092-bb62f02baeb7"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3204aaee-ca3c-4cf4-b7cd-85893bc36626",
+                    "leftValue": "={{$json.reviewer_status}}",
+                    "rightValue": "revise",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "19a96a39-e6ad-4762-924c-5664c2fb7be1",
+                    "leftValue": "={{$json.reviewer_status}}",
+                    "rightValue": "escalate",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0e9843db-d3ba-409a-8da9-1bb5b0559ef2",
+                    "leftValue": "={{$json.reviewer_status}}",
+                    "rightValue": "reject",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -736
+      ],
+      "id": "1761b000-eedd-45e3-9bde-9a3e0f52f1ac",
+      "name": "Switch_A2_Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const verificationA2 = $(\"Verification_A2\").first().json;\nconst verificationA1 = $(\"Verification_A1\").first().json;\n\nreturn [\n  {\n    json: {\n      run_id: verificationA2.run_id,\n      checkpoint: \"Rejected_A2\",\n      rejection_reason: \"Reviewer rejected output\",\n\n      reviewer_status: verificationA2.reviewer_status,\n      risk_score: verificationA2.risk_score,\n      severity: verificationA2.severity,\n\n      draft: {\n        title: verificationA1.evidence.title || null,\n        summary: verificationA1.evidence.summary || null,\n        article: verificationA1.evidence.article || null\n      },\n\n      reviewer_findings: {\n        internal_policy_issues: verificationA2.evidence.internal_policy_issues || [],\n        governance_issues: verificationA2.evidence.governance_issues || [],\n        privacy_security_issues: verificationA2.evidence.privacy_security_issues || [],\n        missing_caveats: verificationA2.evidence.missing_caveats || [],\n        required_disclosure: verificationA2.evidence.required_disclosure || [],\n        recommended_edits: verificationA2.evidence.recommended_edits || [],\n        review_summary: verificationA2.evidence.review_summary || null\n      },\n\n      workflow_findings: {\n        issues: verificationA2.issues || [],\n        warnings: verificationA2.warnings || [],\n        policy_mapping: verificationA2.policy_mapping || []\n      },\n\n      rejected_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -304
+      ],
+      "id": "a25b8599-0cc5-474b-9618-2e0298d549ab",
+      "name": "Reject_Record"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=html",
+        "binaryPropertyName": "=data",
+        "options": {
+          "fileName": "=newsletter_review_pack_{{ new Date().toISOString().replace(/[:.]/g, \"-\") }}.html"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        -304
+      ],
+      "id": "462c7a3a-8dd5-40a3-972a-201db6eebcb2",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=html",
+        "binaryPropertyName": "=data",
+        "options": {
+          "fileName": "=newsletter_review_pack_{{ new Date().toISOString().replace(/[:.]/g, \"-\") }}.html"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        -912
+      ],
+      "id": "a1e4dca1-9c7f-4929-a441-9740d234fb5a",
+      "name": "Approve"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json.evidence ?? {};\nconst reviewer = $node[\"AI Agent2\"]?.json?.output ?? {};\nconst verification = $node[\"Verification_A3\"]?.json ?? $json ?? {};\n\nconst safe = (v) => (v ?? \"\").toString();\n\nconst bullets = (arr) =>\n  Array.isArray(arr) ? arr.map(item => `<li>${safe(item)}</li>`).join(\"\") : \"\";\n\nconst paragraphs = (text) =>\n  safe(text)\n    .split(/\\n\\s*\\n/)\n    .map(p => `<p>${p.replace(/\\n/g, \"<br>\")}</p>`)\n    .join(\"\");\n\nconst riskColor =\n  verification.severity === \"high\" ? \"#c0392b\" :\n  verification.severity === \"medium\" ? \"#e67e22\" :\n  \"#27ae60\";\n\nconst html = `\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>${safe(data.title)}</title>\n</head>\n\n<body style=\"font-family: Calibri, Arial; font-size: 11pt; color: #222; margin: 40px; line-height: 1.5;\">\n\n<div style=\"border-bottom: 2px solid #444; margin-bottom: 24px;\">\n  <div style=\"font-size: 22pt; font-weight: bold;\">${safe(data.title)}</div>\n  <div style=\"font-size: 10pt; color: #666;\">AI Governance Manual Review Pack</div>\n  <div style=\"font-size: 10pt; color: #666;\">Run ID: ${safe(verification.run_id)}</div>\n  <div style=\"font-size: 10pt; color: #666;\">Generated: ${new Date().toISOString()}</div>\n</div>\n\n<h2>1. Review Context</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Reviewer Status</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(reviewer.status || verification.verification_status)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Recommended Action</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.recommended_action)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Risk Score</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.risk_score)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Severity</b></td>\n<td style=\"border:1px solid #ccc; padding:8px; color:${riskColor}; font-weight:bold;\">\n${safe(verification.severity)}\n</td>\n</tr>\n</table>\n\n<h2>2. Executive Summary</h2>\n<p>${safe(data.summary)}</p>\n\n<h2>3. Key Takeaways</h2>\n<ul>${bullets(data.key_takeaways)}</ul>\n\n<h2>4. Main Article</h2>\n${paragraphs(data.article)}\n\n<h2>5. Reviewer Assessment</h2>\n<table style=\"border-collapse: collapse; width: 100%; margin-bottom: 12px;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Score</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(reviewer.score || data.score)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Status</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(reviewer.status || data.status)}</td>\n</tr>\n</table>\n\n<h3>Internal Policy Issues</h3>\n<ul>${bullets(reviewer.internal_policy_issues)}</ul>\n\n<h3>Governance Issues</h3>\n<ul>${bullets(reviewer.governance_issues)}</ul>\n\n<h3>Missing Caveats</h3>\n<ul>${bullets(reviewer.missing_caveats)}</ul>\n\n<h3>Required Disclosure</h3>\n<ul>${bullets(reviewer.required_disclosure)}</ul>\n\n<h2>6. Recommended Edits</h2>\n<ul>${bullets(reviewer.recommended_edits)}</ul>\n\n<h2>7. LinkedIn Teaser</h2>\n<p>${safe(data.linkedin_teaser)}</p>\n\n<h2>8. Audit Metadata</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Pipeline</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">A0 → A1 → A2 → A3</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Manual Review Trigger</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.recommended_action)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Timestamp</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${new Date().toISOString()}</td>\n</tr>\n</table>\n\n<h2>9. Human Decision</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:20px; width:50%;\">\n<b>Reviewer Name</b><br><br>\n</td>\n\n<td style=\"border:1px solid #ccc; padding:20px; width:25%;\">\n<b>Date</b><br><br>\n</td>\n\n<td style=\"border:1px solid #ccc; padding:20px; width:25%;\">\n<b>Decision</b><br><br>\n☐ Approve<br>\n☐ Revise<br>\n☐ Reject\n</td>\n</tr>\n</table>\n\n<div style=\"margin-top: 30px; font-size: 9pt; color:#666;\">\nThis document is AI-assisted and requires human validation before use in governance, compliance, or external communication.\n</div>\n\n</body>\n</html>\n`.trim();\n\nreturn { json: { html } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -720
+      ],
+      "id": "4ff71e32-9722-47e6-9407-e38a6f9b98f5",
+      "name": "Manual_review"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const data = $json.output;\nconst reviewer = $node[\"AI Agent2\"].json.output;\nconst verification = $node[\"Verification_A2\"].json;\n\nconst safe = (v) => (v ?? \"\").toString();\n\nconst bullets = (arr) =>\n  (arr || []).map(item => `<li>${safe(item)}</li>`).join(\"\");\n\nconst paragraphs = (text) =>\n  safe(text)\n    .split(/\\n\\s*\\n/)\n    .map(p => `<p>${p.replace(/\\n/g, \"<br>\")}</p>`)\n    .join(\"\");\n\n// Risk color indicator\nconst riskColor =\n  verification.severity === \"high\" ? \"#c0392b\" :\n  verification.severity === \"medium\" ? \"#e67e22\" :\n  \"#27ae60\";\n\nconst html = `\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>${safe(data.title)}</title>\n</head>\n\n<body style=\"font-family: Calibri, Arial; font-size: 11pt; color: #222; margin: 40px; line-height: 1.5;\">\n\n<div style=\"border-bottom: 2px solid #444; margin-bottom: 24px;\">\n  <div style=\"font-size: 22pt; font-weight: bold;\">${safe(data.title)}</div>\n  <div style=\"font-size: 10pt; color: #666;\">AI Governance Manual Review Pack</div>\n  <div style=\"font-size: 10pt; color: #666;\">Run ID: ${safe(verification.run_id)}</div>\n  <div style=\"font-size: 10pt; color: #666;\">Generated: ${new Date().toISOString()}</div>\n</div>\n\n<h2>1. Review Context</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Reviewer Status</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.reviewer_status)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Recommended Action</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.recommended_action)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Risk Score</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.risk_score)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Severity</b></td>\n<td style=\"border:1px solid #ccc; padding:8px; color:${riskColor}; font-weight:bold;\">\n${safe(verification.severity)}\n</td>\n</tr>\n</table>\n\n<h2>2. Executive Summary</h2>\n<p>${safe(data.summary)}</p>\n\n<h2>3. Key Takeaways</h2>\n<ul>${bullets(data.key_takeaways)}</ul>\n\n<h2>4. Main Article</h2>\n${paragraphs(data.article)}\n\n<h2>5. Reviewer Assessment</h2>\n\n<table style=\"border-collapse: collapse; width: 100%; margin-bottom: 12px;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Score</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(reviewer.score)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Status</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(reviewer.status)}</td>\n</tr>\n</table>\n\n<h3>Internal Policy Issues</h3>\n<ul>${bullets(reviewer.internal_policy_issues)}</ul>\n\n<h3>Governance Issues</h3>\n<ul>${bullets(reviewer.governance_issues)}</ul>\n\n<h3>Missing Caveats</h3>\n<ul>${bullets(reviewer.missing_caveats)}</ul>\n\n<h3>Required Disclosure</h3>\n<ul>${bullets(reviewer.required_disclosure)}</ul>\n\n<h2>6. Recommended Edits</h2>\n<ul>${bullets(reviewer.recommended_edits)}</ul>\n\n<h2>7. LinkedIn Teaser</h2>\n<p>${safe(data.linkedin_teaser)}</p>\n\n<h2>8. Audit Metadata</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Pipeline</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">A0 → A1 → A2 → A3</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Manual Review Trigger</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${safe(verification.recommended_action)}</td>\n</tr>\n<tr>\n<td style=\"border:1px solid #ccc; padding:8px;\"><b>Timestamp</b></td>\n<td style=\"border:1px solid #ccc; padding:8px;\">${new Date().toISOString()}</td>\n</tr>\n</table>\n\n<h2>9. Human Decision</h2>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr>\n<td style=\"border:1px solid #ccc; padding:20px; width:50%;\">\n<b>Reviewer Name</b><br><br>\n</td>\n\n<td style=\"border:1px solid #ccc; padding:20px; width:25%;\">\n<b>Date</b><br><br>\n</td>\n\n<td style=\"border:1px solid #ccc; padding:20px; width:25%;\">\n<b>Decision</b><br><br>\n☐ Approve<br>\n☐ Revise<br>\n☐ Reject\n</td>\n</tr>\n</table>\n\n<div style=\"margin-top: 30px; font-size: 9pt; color:#666;\">\nThis document is AI-assisted and requires human validation before use in governance, compliance, or external communication.\n</div>\n\n</body>\n</html>\n`.trim();\n\nreturn {\n  json: {\n    html\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        -464
+      ],
+      "id": "549039d2-a3db-44ad-8d47-ad5d74556f29",
+      "name": "Manual_review1"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "=html",
+        "binaryPropertyName": "=data",
+        "options": {
+          "fileName": "=newsletter_review_pack_{{ new Date().toISOString().replace(/[:.]/g, \"-\") }}.html"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1040,
+        -464
+      ],
+      "id": "b1db19c0-60b7-4715-b4ba-55dedac85f0f",
+      "name": "Convert to File2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Guardrail_A3_Output\n// Validates Agent 3 revised newsletter output against Agent 2 reviewer findings\n\nconst rawAgentOutput = $input.all()[0]?.json ?? {};\nconst agentOutput = rawAgentOutput.output ?? rawAgentOutput;\n\nconst reviewer = $(\"AI Agent2\").first().json.output ?? {};\nconst agent1 = $(\"AI Agent1\").first().json.output ?? {};\n\nconst issues = [];\nconst warnings = [];\nconst checks = [];\n\nfunction addCheck(check_id, result, details = \"\") {\n  checks.push({ check_id, result, details });\n}\n\nfunction isNonEmptyString(value) {\n  return typeof value === \"string\" && value.trim().length > 0;\n}\n\nfunction isArray(value) {\n  return Array.isArray(value);\n}\n\nconst title = agentOutput.title;\nconst summary = agentOutput.summary;\nconst article = agentOutput.article;\nconst keyTakeaways = agentOutput.key_takeaways;\nconst linkedinTeaser = agentOutput.linkedin_teaser;\nconst revisionNotes = agentOutput.revision_notes;\nconst score = agentOutput.score;\nconst status = agentOutput.status;\n\nconst expectedScore = reviewer.score;\nconst expectedStatus = reviewer.status;\n\nconst recommendedEdits = Array.isArray(reviewer.recommended_edits) ? reviewer.recommended_edits : [];\nconst missingCaveats = Array.isArray(reviewer.missing_caveats) ? reviewer.missing_caveats : [];\n\n// 1. required fields\nconst requiredStringFields = [\n  [\"title\", title],\n  [\"summary\", summary],\n  [\"article\", article],\n  [\"linkedin_teaser\", linkedinTeaser]\n];\n\nfor (const [fieldName, value] of requiredStringFields) {\n  if (!isNonEmptyString(value)) {\n    issues.push(`${fieldName} is required`);\n    addCheck(`${fieldName}_present`, \"fail\");\n  } else {\n    addCheck(`${fieldName}_present`, \"pass\", `length=${value.trim().length}`);\n  }\n}\n\nif (!isArray(keyTakeaways)) {\n  issues.push(\"key_takeaways must be an array\");\n  addCheck(\"key_takeaways_array\", \"fail\");\n} else {\n  addCheck(\"key_takeaways_array\", \"pass\", `count=${keyTakeaways.length}`);\n  if (keyTakeaways.length < 2) {\n    warnings.push(\"key_takeaways has fewer than 2 items\");\n    addCheck(\"key_takeaways_count\", \"warning\", `count=${keyTakeaways.length}`);\n  }\n}\n\nif (!isArray(revisionNotes)) {\n  issues.push(\"revision_notes must be an array\");\n  addCheck(\"revision_notes_array\", \"fail\");\n} else {\n  addCheck(\"revision_notes_array\", \"pass\", `count=${revisionNotes.length}`);\n  if (revisionNotes.length < 1) {\n    warnings.push(\"revision_notes is empty\");\n    addCheck(\"revision_notes_count\", \"warning\", \"count=0\");\n  }\n}\n\n// 2. score / status must be copied exactly\nif (score !== expectedScore) {\n  issues.push(`score must match reviewer output exactly (expected: ${expectedScore}, got: ${score})`);\n  addCheck(\"score_exact_match\", \"fail\");\n} else {\n  addCheck(\"score_exact_match\", \"pass\", `score=${score}`);\n}\n\nif (status !== expectedStatus) {\n  issues.push(`status must match reviewer output exactly (expected: ${expectedStatus}, got: ${status})`);\n  addCheck(\"status_exact_match\", \"fail\");\n} else {\n  addCheck(\"status_exact_match\", \"pass\", `status=${status}`);\n}\n\n// 3. basic quality checks\nif (isNonEmptyString(summary) && summary.trim().length < 30) {\n  warnings.push(\"summary looks too short\");\n  addCheck(\"summary_strength\", \"warning\", `length=${summary.trim().length}`);\n} else if (isNonEmptyString(summary)) {\n  addCheck(\"summary_strength\", \"pass\", `length=${summary.trim().length}`);\n}\n\nif (isNonEmptyString(article) && article.trim().length < 200) {\n  warnings.push(\"article looks too short\");\n  addCheck(\"article_strength\", \"warning\", `length=${article.trim().length}`);\n} else if (isNonEmptyString(article)) {\n  addCheck(\"article_strength\", \"pass\", `length=${article.trim().length}`);\n}\n\n// 4. banned phrases / overclaims\nconst bannedPhrases = [\n  \"fully compliant\",\n  \"guaranteed safe\",\n  \"guarantees safety\",\n  \"proves safety\",\n  \"zero risk\",\n  \"completely safe\"\n];\n\nconst combinedText = [\n  title,\n  summary,\n  article,\n  linkedinTeaser,\n  ...(Array.isArray(keyTakeaways) ? keyTakeaways : []),\n  ...(Array.isArray(revisionNotes) ? revisionNotes : [])\n].join(\" \\n \");\n\nconst foundBanned = bannedPhrases.filter(p =>\n  combinedText.toLowerCase().includes(p)\n);\n\nif (foundBanned.length > 0) {\n  issues.push(`Banned overclaim phrases found: ${foundBanned.join(\", \")}`);\n  addCheck(\"banned_phrase_scan\", \"fail\", foundBanned.join(\", \"));\n} else {\n  addCheck(\"banned_phrase_scan\", \"pass\");\n}\n\n// 5. revision note quality\nif (Array.isArray(revisionNotes)) {\n  revisionNotes.forEach((item, idx) => {\n    if (typeof item !== \"string\" || item.trim().length === 0) {\n      issues.push(`revision_notes item ${idx + 1} is empty or not a string`);\n    } else if (item.trim().length < 10) {\n      warnings.push(`revision_notes item ${idx + 1} looks too short`);\n    }\n  });\n}\n\n// 6. recommended edits coverage (lightweight check)\nif (recommendedEdits.length > 0 && Array.isArray(revisionNotes)) {\n  if (revisionNotes.length === 0) {\n    warnings.push(\"recommended_edits exist but revision_notes is empty\");\n    addCheck(\"recommended_edits_coverage\", \"warning\");\n  } else {\n    addCheck(\"recommended_edits_coverage\", \"pass\", `recommended_edits=${recommendedEdits.length}, revision_notes=${revisionNotes.length}`);\n  }\n}\n\n// 7. missing caveats coverage (lightweight check)\nif (missingCaveats.length > 0) {\n  const articleLower = String(article || \"\").toLowerCase();\n  const caveatSignals = [\"however\", \"may\", \"limitations\", \"caveat\", \"depends\", \"subject to\", \"not necessarily\", \"in practice\"];\n  const hasCaveatSignal = caveatSignals.some(s => articleLower.includes(s));\n\n  if (!hasCaveatSignal) {\n    warnings.push(\"Reviewer identified missing caveats, but revised article shows weak caveat language\");\n    addCheck(\"missing_caveats_coverage\", \"warning\");\n  } else {\n    addCheck(\"missing_caveats_coverage\", \"pass\");\n  }\n}\n\n// 8. compare with Agent 1 for accidental collapse\nif (isNonEmptyString(article) && isNonEmptyString(agent1.article)) {\n  if (article.trim() === String(agent1.article).trim()) {\n    warnings.push(\"Revised article is identical to Agent 1 article\");\n    addCheck(\"article_changed_from_a1\", \"warning\");\n  } else {\n    addCheck(\"article_changed_from_a1\", \"pass\");\n  }\n}\n\n// 9. status\nlet guardrailStatus = \"pass\";\nif (issues.length > 0) {\n  guardrailStatus = \"fail\";\n} else if (warnings.length > 0) {\n  guardrailStatus = \"warning\";\n}\n\n// 10. risk score\nlet risk_score = 0.1;\nrisk_score += Math.min(issues.length * 0.12, 0.6);\nrisk_score += Math.min(warnings.length * 0.05, 0.2);\nrisk_score = Math.min(Number(risk_score.toFixed(2)), 0.95);\n\nreturn [\n  {\n    json: {\n      checkpoint: \"A3_post_agent_output_guardrail\",\n      status: guardrailStatus,\n      risk_score,\n      issues,\n      warnings,\n      checks,\n      summary: {\n        recommended_edits_count: recommendedEdits.length,\n        missing_caveats_count: missingCaveats.length,\n        revision_notes_count: Array.isArray(revisionNotes) ? revisionNotes.length : 0,\n        issue_count: issues.length,\n        warning_count: warnings.length\n      },\n      agent3_output_validated: agentOutput,\n      checked_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        -720
+      ],
+      "id": "09f017fc-f0d0-44e4-94cd-9f088f03b4ae",
+      "name": "Guardrail_A3_Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verification_A3\nconst guardrail = $json;\n\nconst status = guardrail.status || \"fail\";\nconst riskScore = Number(guardrail.risk_score ?? 0.9);\nconst issues = Array.isArray(guardrail.issues) ? guardrail.issues : [];\nconst warnings = Array.isArray(guardrail.warnings) ? guardrail.warnings : [];\nconst checks = Array.isArray(guardrail.checks) ? guardrail.checks : [];\nconst summary = guardrail.summary || {};\nconst validatedOutput = guardrail.agent3_output_validated || {};\n\nfunction deriveSeverity(status, riskScore, issuesCount) {\n  if (status === \"fail\" || riskScore >= 0.75 || issuesCount >= 3) return \"high\";\n  if (status === \"warning\" || riskScore >= 0.35 || issuesCount >= 1) return \"medium\";\n  return \"low\";\n}\n\nfunction deriveAction(status, severity) {\n  if (status === \"fail\") return \"block_final_release\";\n  if (status === \"warning\" && severity === \"high\") return \"manual_review\";\n  if (status === \"warning\" && severity === \"medium\") return \"continue_with_review_flag\";\n  return \"approve_for_final_release\";\n}\n\nconst severity = deriveSeverity(status, riskScore, issues.length);\nconst recommendedAction = deriveAction(status, severity);\nconst continuePipeline = status !== \"fail\";\n\nconst controlResults = checks.map(check => ({\n  check_id: check.check_id,\n  result: check.result,\n  details: check.details || \"\"\n}));\n\nconst policyMapping = [\n  {\n    policy_id: \"POL-NEWS-015\",\n    control: \"Revision schema completeness\",\n    result: issues.some(x => x.includes(\"required\") || x.includes(\"must be an array\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-016\",\n    control: \"Reviewer score/status preservation\",\n    result: issues.some(x => x.includes(\"score must match\") || x.includes(\"status must match\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-017\",\n    control: \"No reintroduction of overclaiming\",\n    result: issues.some(x => x.includes(\"Banned overclaim phrases\")) ? \"fail\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-018\",\n    control: \"Revision responsiveness to reviewer findings\",\n    result: warnings.some(x => x.includes(\"caveat\")) || warnings.some(x => x.includes(\"recommended_edits\")) ? \"warning\" : \"pass\"\n  },\n  {\n    policy_id: \"POL-NEWS-019\",\n    control: \"Final draft release readiness\",\n    result: status === \"fail\" ? \"fail\" : warnings.length > 0 ? \"warning\" : \"pass\"\n  }\n];\n\nreturn [\n  {\n    json: {\n      run_id: $(\"Verification_A0\").first().json.run_id,\n      checkpoint: \"Verification_A3\",\n      agent: \"Agent 3 - Revision Editor\",\n      verification_status: status,\n      risk_score: riskScore,\n      severity,\n      recommended_action: recommendedAction,\n      continue_pipeline: continuePipeline,\n\n      counts: {\n        recommended_edits_count: summary.recommended_edits_count ?? 0,\n        missing_caveats_count: summary.missing_caveats_count ?? 0,\n        revision_notes_count: summary.revision_notes_count ?? 0,\n        issue_count: summary.issue_count ?? issues.length,\n        warning_count: summary.warning_count ?? warnings.length\n      },\n\n      issues,\n      warnings,\n      control_results: controlResults,\n      policy_mapping: policyMapping,\n\n      evidence: {\n        title: validatedOutput.title || null,\n        summary: validatedOutput.summary || null,\n        article: validatedOutput.article || null,\n        key_takeaways: validatedOutput.key_takeaways || [],\n        linkedin_teaser: validatedOutput.linkedin_teaser || null,\n        revision_notes: validatedOutput.revision_notes || [],\n        score: validatedOutput.score ?? null,\n        status: validatedOutput.status ?? null\n      },\n\n      verified_at: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        -720
+      ],
+      "id": "210b7c49-2e54-4e9f-85d0-d5836eef34bf",
+      "name": "Verification_A3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser4",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Guardrail_A0_output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Guardrail_A0_Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Guardrail_AI_Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Policy_Loader": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Guardrail_A2_Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Guardrail_A3_Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrail_A0_Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrail_A0_output": {
+      "main": [
+        [
+          {
+            "node": "Verification_A0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification_A0": {
+      "main": [
+        [
+          {
+            "node": "IF_A0_Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_A0_Continue": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrail_AI_Output": {
+      "main": [
+        [
+          {
+            "node": "Verification_A1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification_A1": {
+      "main": [
+        [
+          {
+            "node": "IF_A1_Continue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_A1_Continue": {
+      "main": [
+        [
+          {
+            "node": "Policy_Loader",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Policy_Loader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrail_A2_Output": {
+      "main": [
+        [
+          {
+            "node": "Verification_A2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification_A2": {
+      "main": [
+        [
+          {
+            "node": "Switch_A2_Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_A2_Status": {
+      "main": [
+        [
+          {
+            "node": "Approve",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual_review1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject_Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reject_Record": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual_review": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual_review1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrail_A3_Output": {
+      "main": [
+        [
+          {
+            "node": "Verification_A3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification_A3": {
+      "main": [
+        [
+          {
+            "node": "Manual_review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "10990974-9c3a-4236-bd09-638b3c46fabd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "97e9447e553fa38b97883a293ca034395206bae98406a648b67be0d7bfba8c12"
+  },
+  "id": "4fPOS7LSfLgLUtL0",
+  "tags": []
+}
